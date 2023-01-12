@@ -15,11 +15,16 @@ function sourced {
 }
 
 function denormopts {
+  #echo "1=$1 2=$2 3=$3 4=$4"
   local -n _names_=$2
   local -n _flags_=$3
   local IFS=$IFS
   local _defn_
+  local _long_=''
   local _opt_
+  local _short_=''
+
+  _getopts_=( [long]='' [short]='' )
 
   for _defn_ in $1; do
     IFS=,
@@ -28,14 +33,49 @@ function denormopts {
 
     for _opt_ in $1; do
       _names_[$_opt_]=$2
+
+      # Format options definition for GNU getopt
+      case $opt in 
+        -? ) _short_+=,${_opt_#?};;
+        * ) _long_+=,${_opt_#??};;
+      esac
+
+      case ${3:-} in
+        '' )
+          case $opt in
+            -? ) _short_+=: ;;
+            * ) _long_+=: ;;
+          esac
+          ;;
+        *) _flags_[$_opt_]=1;;
+      esac
       
-      # If there is an 'f' in the option definition
-      # then mark that option as a flag 
-      if ! [[ -z "$3" ]]; then
-        _flags_[$_opt_]=1
-      fi
     done
   done
+
+  # Remove first comma
+  _getopts_[long]=${_long_#?}
+  _getopts_[short]=${_short_#?}
+}
+
+is_enhanced_getopt () {
+  # Returns true if GNU getopt is installed
+  local rc
+  getopt -T &>/dev/null && rc=$? || rc=$? 
+  (( rc == 4 ))
+}
+
+function wrap_getopt {
+  echo "1=$1 2=$2 3=$3 4=$4"
+  local short=$2
+  local long=$3
+  local result
+
+  ! result=$(getopt -o "$short" ${long:+-l} $long -n $0 -- $1)
+  case $? in
+    0) echo '_err_=1; return';;
+    1) echo "set -- $result";;
+  esac 
 }
 
 function parseopts {
@@ -47,6 +87,9 @@ function parseopts {
   local -n posargs_=$4
   local -A flags_=()
   local -A names_=()
+  local rc_
+  local result_
+
 
   _err_=0
  
@@ -57,7 +100,20 @@ function parseopts {
   set -- $1
   denormopts "$defs_" names_ flags_
 
-  while (( $# )); do
+  # Check if we have enhanced getopt
+  #is_enhanced_getopt && eval $(wrap_getopt "$*" "${getopts_[short]}" "${getopts_[long]}")
+
+  is_enhanced_getopt && wrap_getopt "$*" "${getopts_[short]}"
+
+  # keep reading options while you encounter
+  # words starting with a dash and followed by some chars
+  while [[ ${1:-} == -?* ]]; do
+
+    # stop reading options once you encounter --
+    [[ $1 == -- ]] && {
+      shift
+      break
+    }
     # Return _err_=1 if the provided
     # option was not defined
     [[ -z "${names_[$1]}" ]] && {
@@ -75,6 +131,9 @@ function parseopts {
     fi
     shift
   done
+
+  # Return remaining arguments as positional arguments
+  posargs_=( "$@" )
 }
 
 main () {

@@ -77,11 +77,11 @@ describe parseopts
 
   it "returns a named argument and a flag"
     defs=(
-      "--option,option_val"
+      "--otion,option_val"
       "-p,p_flag,f"
     )
 
-    args=(--option sample -p)
+    args=(--otion sample -p)
     parseopts "${args[*]}" "${defs[*]}" options posargs
     expecteds=(
       option_val=sample
@@ -90,4 +90,55 @@ describe parseopts
 
     assert equal "${expecteds[*]}" "${options[*]}"
   end
+
+  it "returns two named arguments"
+    defs=( "--option,option_val" "--another,another_val" )
+    args=( --option sample  --another sample2 )
+    parseopts "${args[*]}" "${defs[*]}" options posargs
+    expecteds=(
+      option_val=sample
+      another_val=sample2
+    )
+    assert equal "${expecteds[*]}" "${options[*]}"
+  end
+
+
+  it "stops when it encounters a non-option"
+    defs=( "--option,option_val" "--another,another_val" )
+    args=( --option sample  - --another sample2 )
+    parseopts "${args[*]}" "${defs[*]}" options posargs
+    expecteds=(
+      option_val=sample
+    )
+    assert equal "${expecteds[*]}" "${options[*]}"
+    assert equal "$_err_" 0
+  end
+
+  it "stops when it encounters --"
+    defs=(
+      --option,option_v
+      -p,p_flag,f 
+    )
+    args=( --option sample_val -- -p )
+    parseopts "${args[*]}" "${defs[*]}" ops posargs
+    assert equal option_v=sample_val $ops
+  end
+
+  it "returns positional arguments"
+    defs=( -o,o_flag,f )
+    args=( -o one two )
+    parseopts "${args[*]}" "${defs[*]}" ops posargs
+    expected_ops=( o_flag=1 )
+    expected_args=( one two )
+    assert equal "${expected_ops[*]}" "${ops[*]}"
+    assert equal "${expected_args[*]}" "${posargs[*]}"
+  end
+
+  it "accepts a short option with no space"
+    defs=( -o,o_val )
+    args=( -oone )
+    parseopts "${args[*]}" "${defs[*]}" options posargs
+    assert equal o_val=one $options
+  end
+
 end
