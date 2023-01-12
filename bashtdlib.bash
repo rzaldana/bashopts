@@ -28,31 +28,53 @@ function denormopts {
 
     for _opt_ in $1; do
       _names_[$_opt_]=$2
-      [[ -z "$3" ]] && _flags_[$_opt_]=1
+      
+      # If there is an 'f' in the option definition
+      # then mark that option as a flag 
+      if ! [[ -z "$3" ]]; then
+        _flags_[$_opt_]=1
+      fi
     done
   done
 }
 
 function parseopts {
+  #echo "1=$1 2=$2 3=$3 4=$4"
   local defs_=$2
   local -n opts_=$3
+  # clear opts_
+  opts_=()
   local -n posargs_=$4
   local -A flags_=()
   local -A names_=()
 
   _err_=0
-  
+ 
+  # parses the space-separated strings
+  # of the first argument into position arguments
+  # e.g. if the provided ${args[*]} is "--option value"
+  # then $1='--option' and $2='--value' 
   set -- $1
   denormopts "$defs_" names_ flags_
 
-  # Return _err_=1 if the provided
-  # option was not defined
-  [[ -z "${names_[$1]}" ]] && {
-    _err_=1
-    return
-  }
+  while (( $# )); do
+    # Return _err_=1 if the provided
+    # option was not defined
+    [[ -z "${names_[$1]}" ]] && {
+      _err_=1
+      return
+    }
 
-  opts_="${names_[$1]}=1"
+    # If option is not a flag, store its value in
+    # the return hash
+    if [[ -z "${flags_[$1]}" ]]; then
+      opts_+=( "${names_[$1]}=$2" )
+      shift
+    else
+      opts_+=( "${names_[$1]}=1" )
+    fi
+    shift
+  done
 }
 
 main () {

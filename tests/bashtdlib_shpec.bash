@@ -64,14 +64,30 @@ describe parseopts
   it "returns _err_=1 if the argument isn't defined"
     defs=( -o,o_flag,f )
     args=( --other )
-    parseopts "${args[@]}" "${defs[*]}" options posargs
+    parseopts "${args[*]}" "${defs[*]}" options posargs
     assert equal 1 $_err_
   end
 
   it "returns a named argument"
     defs=( --option,option_val )
     args=( --option sample )
-    parseopts "${args[@]}" "${defs[*]}" options posargs
+    parseopts "${args[*]}" "${defs[*]}" options posargs
     assert equal option_val=sample $options
+  end
+
+  it "returns a named argument and a flag"
+    defs=(
+      "--option,option_val"
+      "-p,p_flag,f"
+    )
+
+    args=(--option sample -p)
+    parseopts "${args[*]}" "${defs[*]}" options posargs
+    expecteds=(
+      option_val=sample
+      p_flag=1
+    )
+
+    assert equal "${expecteds[*]}" "${options[*]}"
   end
 end
