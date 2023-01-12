@@ -1,11 +1,15 @@
+#!/usr/bin/env bash
+shopt -s expand_aliases
+
 # If running on MacOs, alias readlink to GNU readlink
 OS_NAME=$(uname -s)
 if [[ "$OS_NAME" == "Darwin" ]]; then
-  [ -z "$(command -v greadlink)" ] && { echo "You're running on MacOS but GNU readlink is not installed. You can install it by running 'brew install coreutils'" ; exit 1 ; }
-  alias readlink=greadlink
+  [[ -z "$(command -v greadlink)" ]] && { echo "You're running on MacOS but GNU readlink is not installed. You can install it by running 'brew install coreutils'" ; exit 1 ; }
+  alias readlink='greadlink'
 fi
 
 bashtdlib="$(dirname "$(readlink -f "$BASH_SOURCE")")"/../bashtdlib.bash
+source "$bashtdlib"
 
 describe sourced
   it "returns true when in a file that's being sourced"
@@ -47,4 +51,27 @@ describe sourced
     rm "$file"
   end
 
+end
+
+describe parseopts
+  it "returns a short flag"
+    defs=( '-o,o_flag,f' )
+    args=( '-o' )
+    parseopts "${args[*]}" "${defs[*]}" options posargs
+    assert equal o_flag=1 $options
+  end
+
+  it "returns _err_=1 if the argument isn't defined"
+    defs=( -o,o_flag,f )
+    args=( --other )
+    parseopts "${args[@]}" "${defs[*]}" options posargs
+    assert equal 1 $_err_
+  end
+
+  it "returns a named argument"
+    defs=( --option,option_val )
+    args=( --option sample )
+    parseopts "${args[@]}" "${defs[*]}" options posargs
+    assert equal option_val=sample $options
+  end
 end
