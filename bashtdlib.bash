@@ -15,9 +15,9 @@ function sourced {
 }
 
 function denormopts {
-  #echo "1=$1 2=$2 3=$3 4=$4"
   local -n _names_=$2
   local -n _flags_=$3
+  local -n _getopts_=$4
   local IFS=$IFS
   local _defn_
   local _long_=''
@@ -25,38 +25,31 @@ function denormopts {
   local _short_=''
 
   _getopts_=( [long]='' [short]='' )
-
   for _defn_ in $1; do
     IFS=,
     set -- $_defn_
     IFS='|'
-
     for _opt_ in $1; do
       _names_[$_opt_]=$2
-
-      # Format options definition for GNU getopt
-      case $opt in 
-        -? ) _short_+=,${_opt_#?};;
-        * ) _long_+=,${_opt_#??};;
+      case $_opt_ in
+        -?  ) _short_+=,${_opt_#?};;
+        *   ) _long_+=,${_opt_#??};;
       esac
-
       case ${3:-} in
         '' )
-          case $opt in
-            -? ) _short_+=: ;;
-            * ) _long_+=: ;;
+          case $_opt_ in
+            -?  ) _short_+=: ;;
+            *   ) _long_+=:  ;;
           esac
           ;;
-        *) _flags_[$_opt_]=1;;
+        * ) _flags_[$_opt_]=1;;
       esac
-      
     done
   done
-
-  # Remove first comma
   _getopts_[long]=${_long_#?}
   _getopts_[short]=${_short_#?}
 }
+
 
 is_enhanced_getopt () {
   # Returns true if GNU getopt is installed
@@ -66,7 +59,6 @@ is_enhanced_getopt () {
 }
 
 function wrap_getopt {
-  echo "1=$1 2=$2 3=$3 4=$4"
   local short=$2
   local long=$3
   local result
@@ -86,6 +78,7 @@ function parseopts {
   opts_=()
   local -n posargs_=$4
   local -A flags_=()
+  local -A getopts_=()
   local -A names_=()
   local rc_
   local result_
@@ -98,12 +91,14 @@ function parseopts {
   # e.g. if the provided ${args[*]} is "--option value"
   # then $1='--option' and $2='--value' 
   set -- $1
-  denormopts "$defs_" names_ flags_
+  denormopts "$defs_" names_ flags_ getopts_
 
   # Check if we have enhanced getopt
   #is_enhanced_getopt && eval $(wrap_getopt "$*" "${getopts_[short]}" "${getopts_[long]}")
 
-  is_enhanced_getopt && wrap_getopt "$*" "${getopts_[short]}"
+  echo "getopts_[short]=${getopts_[long]}"
+  echo "getopts_[long]=${getopts_[short]}"
+  is_enhanced_getopt && eval $(wrap_getopt "$*" "${getopts_[short]}" "${getopts_[long]}")
 
   # keep reading options while you encounter
   # words starting with a dash and followed by some chars

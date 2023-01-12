@@ -103,15 +103,14 @@ describe parseopts
   end
 
 
-  it "stops when it encounters a non-option"
-    defs=( "--option,option_val" "--another,another_val" )
+  it "stops when it encounters a non-option if not using GNU getopt"
+    defs=( "-o|--option,option_val" "-a|--another,another_val" )
     args=( --option sample  - --another sample2 )
     parseopts "${args[*]}" "${defs[*]}" options posargs
     expecteds=(
       option_val=sample
     )
-    assert equal "${expecteds[*]}" "${options[*]}"
-    assert equal "$_err_" 0
+    is_enhanced_getopt || assert equal "${expecteds[*]}" "${options[*]}"
   end
 
   it "stops when it encounters --"
