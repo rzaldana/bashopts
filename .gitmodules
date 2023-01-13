@@ -1,3 +1,6 @@
 [submodule "shpec"]
 	path = shpec
 	url = https://github.com/rylnd/shpec.git
+[submodule "shtdlib"]
+	path = shtdlib
+	url = https://github.com/antevens/shtdlib.git
