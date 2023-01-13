@@ -1,4 +1,4 @@
-# bash-stdlib
+# bashtdlib
 A Bash library and CLI utility to easily create enhanced Bash scripts.
 
 ## Tests
